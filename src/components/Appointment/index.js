@@ -6,6 +6,7 @@ import Empty from "components/Appointment/Empty.js";
 import Form from "components/Appointment/Form.js";
 import Status from "components/Appointment/Status.js";
 import Confirm from "components/Appointment/Confirm.js";
+import Error from "components/Appointment/Error.js";
 
 import "components/Appointment/styles.scss";
 import useVisualMode from "hooks/useVisualMode.js";
@@ -16,6 +17,7 @@ export default function Appointment(props) {
   const CREATE = "CREATE";
   const SAVING = "SAVING";
   const CONFIRM = "CONFIRM";
+  const ERROR = "ERROR";
 
   const { mode, transition, back } = useVisualMode(
     props.interview ? SHOW : EMPTY
@@ -28,16 +30,22 @@ export default function Appointment(props) {
     };
     transition(SAVING);
     props.bookInterview(props.id, interview)
-      .then(() => {
+      .then((err) => {
         transition(SHOW);
+      })
+      .catch((err) => {
+        transition(ERROR, true);
       })
   }
 
   function deleting() {
-    transition(SAVING);
+    transition(SAVING, true);
     props.cancelInterview(props.id)
       .then(() => {
         transition(EMPTY);
+      })
+      .catch((err) => {
+        transition(ERROR, true);
       })
   }
 
@@ -56,8 +64,9 @@ export default function Appointment(props) {
           onDelete={() => {
             transition(CONFIRM)
           }}
-        // onDelete={() => { 
-        //   deleting() }}
+          onEdit={() => {
+            transition(CREATE)
+          }}
         />
       )}
 
@@ -85,6 +94,14 @@ export default function Appointment(props) {
           }}
           onCancel={() => { back() }}
         />}
+
+      {mode === ERROR && (
+        <Error
+        onClose={() => {
+          back();
+        }}
+        />
+      )}
 
     </article>
   );
