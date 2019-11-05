@@ -1,14 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import axios from 'axios';
+import reducer, {
+  SET_DAY,
+  SET_APPLICATION_DATA,
+  SET_INTERVIEW,
+  UPDATE_SPOT
+} from "reducers/application";
 
 export default function useApplicationData() {
-  const setDay = day => setState({ ...state, day });
-  const [state, setState] = useState({
-    day: "Monday",
-    days: [],
-    appointments: {},
-    interviewers: {}
-  });
+
+
+
+const [state, dispatch] = useReducer(reducer, {
+  day: "Monday",
+  days: [],
+  appointments: {},
+  interviewers: {}
+});
+
+const setDay = day => dispatch({type:SET_DAY, value: day});
 
   useEffect(() => {
     Promise.all([
@@ -16,7 +26,7 @@ export default function useApplicationData() {
       axios.get("http://localhost:8001/api/appointments"),
       axios.get("http://localhost:8001/api/interviewers")
     ]).then((all) => {
-      setState(prev => ({ ...prev, days: all[0].data, appointments: all[1].data, interviewers: all[2].data }));
+      dispatch({ type:SET_APPLICATION_DATA, value: all})
     });
   }, []);
 
@@ -31,10 +41,23 @@ export default function useApplicationData() {
     };
     return axios.put(`http://localhost:8001/api/appointments/${id}`, appointment)
       .then(() => {
-        setState({
-          ...state,
-          appointments
-        });
+        dispatch({type:SET_INTERVIEW, value: appointments});
+        const dayId = findDayId(state.day)
+        let updatedSpots = 0;
+        if (state.appointments[id].interview) {
+          updatedSpots = state.days[dayId].spots;
+        } else {
+          updatedSpots = state.days[dayId].spots - 1;
+        }
+        const day = {
+          ...state.days[dayId],
+           spots:updatedSpots
+        }
+        const days = [
+          ...state.days,
+        ]
+        days[dayId] = day
+        dispatch({type:UPDATE_SPOT, value:days});
       })
   }
 
@@ -50,11 +73,33 @@ export default function useApplicationData() {
 
     return axios.delete(`http://localhost:8001/api/appointments/${appointmentId}`)
       .then(() => {
-        setState({
-          ...state,
-          appointments
-        });
+        dispatch({type:SET_INTERVIEW, value: appointments});
+        const dayId = findDayId(state.day)
+        const updatedSpots = state.days[dayId].spots + 1
+        const day = {
+          ...state.days[dayId],
+           spots:updatedSpots
+        }
+        const days = [
+          ...state.days,
+        ]
+        days[dayId] = day
+        dispatch({type:UPDATE_SPOT, value:days});
       })
+  }
+
+  function findDayId(dayValue) {
+    if (dayValue === "Monday") {
+      return 0;
+    } else if (dayValue === "Tuesday") {
+      return 1;
+    } else if (dayValue === "Wednesday") {
+      return 2;
+    } else if (dayValue === "Thursday") {
+      return 3;
+    } else if (dayValue === "Friday") {
+      return 4;
+    }
   }
 
   return {
