@@ -49,6 +49,11 @@ export default function Appointment(props) {
       })
   }
 
+  let formInput = "";
+  if (props.interview) {
+    formInput = props.interview.student;
+  }
+
 
 
   return (
@@ -72,7 +77,7 @@ export default function Appointment(props) {
 
       {mode === CREATE &&
         <Form
-          name={""}
+          name={formInput}
           interviewers={props.interviewers}
           interviewer={""}
           onSave={(name, interviewer) => {
